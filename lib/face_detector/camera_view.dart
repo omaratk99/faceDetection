@@ -55,8 +55,8 @@ var detectController =Get.put(DetectionController());
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(
-          seconds: 2), // Adjust duration for speed of the animation
-    )..repeat(reverse: true); // Repeat with reverse to create a pulsing effect
+          seconds: 2),
+    )..repeat(reverse: true);
 
     _sizeAnimation = Tween(begin: 0.85, end: 0.95).animate(
       CurvedAnimation(
@@ -107,28 +107,23 @@ var detectController =Get.put(DetectionController());
             fit: StackFit.expand,
             children: <Widget>[
               Center(
-                  child: _changingCameraLens
-                      ? Center(
-                          child: const Text('Changing camera lens'),
-                        )
-                      : Center(
-                          child: ClipRRect(
-                          child: SizedOverflowBox(
-                            size: Size(Get.width / 1.1, Get.width / 1.1),
-                            alignment: Alignment.center,
-                            child: CameraPreview(
-                              detectController.controller,
-                              child: widget.customPaint,
-                            ),
+                  child:Center(
+                      child: ClipRRect(
+                        child: SizedOverflowBox(
+                          size: Size(Get.width / 1.1, Get.width / 1.1),
+                          alignment: Alignment.center,
+                          child: CameraPreview(
+                            detectController.controller,
+                            child: widget.customPaint,
                           ),
-                        ))),
+                        ),
+                      ))),
               ClipPath(
                 clipper: CircleClipper(),
                 child: Container(
                   color: Colors.white,
                 ),
               ),
-              // Animated blue circle using AnimatedBuilder
               AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {

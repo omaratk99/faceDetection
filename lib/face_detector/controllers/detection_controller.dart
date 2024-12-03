@@ -66,25 +66,16 @@ class DetectionController extends GetxController {
     }
   }
 
-  setImage(bool first, Uint8List? imageFile, String imagePath) {
+  setImage(bool first, Uint8List? imageFile )async {
     if (imageFile == null) return;
-    // setState(() => _similarity = "nil");
     if (first) {
-      // image1.bitmap = base64Encode(imageFile);
-      // image1.imageType = type;
       setImage1(imageFile);
-      this.imagePath = imagePath;
       update();
     } else {
-      imageBytes2 = imageFile;
-      this.imagePath = imagePath;
-
-      // image2.bitmap = base64Encode(imageFile);
-      // image2.imageType = type;
-      imageBytes2 = imageFile;
-      update();
+      setImage2(imageFile);
     }
     Get.to(MyApp());
+    await stopLiveFeed();
   }
 
   Future<void> pickAndConvertImage1() async {

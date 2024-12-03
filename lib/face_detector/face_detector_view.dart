@@ -20,24 +20,32 @@ class FaceDetectorView extends StatefulWidget {
 class _FaceDetectorViewState extends State<FaceDetectorView> {
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(
-      enableContours: false,
-      enableLandmarks: false,
-    ),
+        enableContours: false,
+        enableLandmarks: false,
+        minFaceSize: 0.99,
+        performanceMode: FaceDetectorMode.accurate),
   );
   bool _canProcess = true;
   bool _isBusy = false;
   CustomPaint? _customPaint;
   var _cameraLensDirection = CameraLensDirection.front;
-  var detectController = Get.put(DetectionController());
-
+  var detectController = Get.find<DetectionController>();
+@override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _canProcess = true;
+    _isBusy = false;
+  }
   @override
-  void dispose() {
+  void dispose() async {
     _canProcess = false;
     _faceDetector.close();
-    detectController.stopLiveFeed();
+    await detectController.controller.stopImageStream();
+    detectController.setBorderColor(Colors.blue);
+    detectController.controller.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return DetectorView(
@@ -46,31 +54,35 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
       onImage: _processImage,
       initialCameraLensDirection: _cameraLensDirection,
       onCameraLensDirectionChanged: (value) => _cameraLensDirection = value,
+      onDetectorViewModeChanged: (v) {
+        detectController.setBorderColor(Colors.blue);
+      },
     );
   }
-  var detectionController = Get.put(DetectionController());
 
   Future<void> _processImage(InputImage inputImage) async {
-
     if (!_canProcess) return;
     if (_isBusy) return;
     _isBusy = true;
+
     final faces = await _faceDetector.processImage(inputImage);
+
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
-      if (faces.isNotEmpty) {
+      if (faces.isNotEmpty &&
+          faces[0].boundingBox.size.width <
+              MediaQuery.of(context).size.width / 1.4) {
         detectController.setBorderColor(Colors.green);
-        final a=await detectController.controller.takePicture();
-        final Uint8List bytes = await a.readAsBytes();
-        detectionController.setImage(widget.isFirst, bytes,a.path??'');
+        final takePicture = await detectController.controller.takePicture();
+        final Uint8List bytes = await takePicture.readAsBytes();
+        setState(faces.clear);
+        detectController.setImage(widget.isFirst, bytes);
         bytes.clear();
         detectController.faceDetector.close();
-        // detectController.stopLiveFeed();
-        detectionController.controller.stopImageStream();
-        detectionController.controller.dispose();
-        faces.clear();
+
       } else {
         detectController.setBorderColor(Colors.blue);
+        setState(faces.clear);
       }
       final painter = FaceDetectorPainter(
         faces,
@@ -80,10 +92,6 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
       );
       _customPaint = CustomPaint(painter: painter);
     } else {
-      String text = 'Faces found: ${faces.length}\n\n';
-      for (final face in faces) {
-        text += 'face: ${face.boundingBox}\n\n';
-      }
       _customPaint = null;
     }
     _isBusy = false;
